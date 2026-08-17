@@ -1,65 +1,106 @@
-type Project  {
-	UUID                 string    `json:"uuid" gorm:"comment:'编号'"`
-	OrganUID             string    `json:"ouid" gorm:"column:organ_uid;comment:'所属组织uid'"`
-	CreateBy             string    `json:"create_by" gorm:"column:create_by;comment:'项目创建人'"`
-	ProTplUID            string    `json:"pro_tpl_uid" gorm:"column:pro_tpl_uid;comment:'项目模板uid'"`
-	Cover                string    `json:"cover" gorm:"column:cover;comment:'封面'"`
-	Name                 string    `json:"name" gorm:"column:name;comment:'名称'"`
-	Description          string    `json:"description" gorm:"column:description;comment:'描述'"`
-	Order                int       `json:"sort" gorm:"column:sort;comment:'排序'"`
-	Schedule             string    `json:"schedule" gorm:"comment:'进度'"`
-	Private              int       `json:"private" gorm:"comment:'是否私有'"`
-	Archive              int       `json:"archive" gorm:"default:2;comment:'是否归档,1为归档2未归档'"`
-	Archive_time         time.Time `json:"archive_time" gorm:"default:null;comment:'归档时间'"`
-	OpenBeginTime        time.Time `json:"open_begin_time" gorm:"default:null;comment:'是否开启任务开始时间'"`
-	Open_task_private    time.Time `json:"open_task_private" gorm:"default:null;comment:'是否开启新任务默认开启隐私模式'"`
-	BeginTime            time.Time `json:"begin_time" gorm:"default:null;comment:'项目开始日期'"`
-	EndTime              time.Time `json:"end_time" gorm:"default:null;comment:'项目截止日期'"`
-	RecycleTime          time.Time `json:"recycle_time" gorm:"default:null;comment:'回收时间'"`
-	IsRecycle            int       `json:"is_recycle" gorm:"default:2;comment:'是否已回收1 为未回收2为回收'"`
-	IsFollow             int       `json:"is_follow" gorm:"-"` // 1为已关注，0为未关注
-	Auto_update_schedule int       `json:"auto_update_schedule" gorm:"comment:'自动更新项目进度'"`
-}
+1. 项目表 projects
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	项目编号
+organ_uid	TEXT	INDEX	所属组织 UID
+create_by	TEXT	INDEX	项目创建人
+pro_tpl_uid	TEXT	INDEX	项目模板 UID
+cover	TEXT		封面图片地址
+name	TEXT		项目名称
+description	TEXT		项目描述
+sort	INTEGER		排序值
+schedule	TEXT		进度信息
+is_private	INTEGER	DEFAULT 0	是否私有（0/1）
+is_archived	INTEGER	DEFAULT 0	是否归档（0/1）
+archive_time	DATETIME	NULL	归档时间
+open_begin_time	DATETIME	NULL	任务开始时间（若启用）
+open_task_private	INTEGER	DEFAULT 0	新任务默认开启隐私模式（0/1）
+begin_time	DATETIME	NULL	项目开始日期
+end_time	DATETIME	NULL	项目截止日期
+recycle_time	DATETIME	NULL	回收时间
+is_recycled	INTEGER	DEFAULT 0	是否已回收（0/1）
+auto_update_schedule	INTEGER	DEFAULT 0	自动更新项目进度（0/1）
+created_at	DATETIME	NOT NULL	创建时间
+updated_at	DATETIME	NOT NULL	更新时间
+deleted_at	DATETIME	INDEX	软删除时间（用于回收站）
+备注：is_follow 字段为运行时计算，不持久化。
 
-type ProjectFeatures struct {
-	UUID        string `json:"uuid" gorm:"comment:'编号'"`
-	ProUID      string `json:"pro_uid" gorm:"comment:'项目编号'"`
-	Name        string `json:"name" gorm:"comment:'名称'"`
-	Description string `json:"description" gorm:"comment:'描述'"`
-}
-
-type ProjectVersion struct {
-	UUID            string     `json:"uuid" gorm:"comment:'编号'"`
-	Name            string     `json:"name" gorm:"comment:'名称'"`
-	Description     string     `json:"description" gorm:"comment:'描述'"`
-	StartTime       time.Timer `json:"start_time" gorm:"comment:'开始时间'"`
-	PublishTime     time.Timer `json:"publish_time" gorm:"comment:'发布时间'"`
-	PlanPublishTime time.Timer `json:"plan_publish_time" gorm:"comment:'计划发布时间'"`
-	Schedule        int        `json:"schedule" gorm:"comment:'进度百分比'"`
-	Status          int        `json:"status" gorm:"comment:'状态.0:未开始 2:延期发布 3:已发布 '"`
-	FeaturesUID     string     `json:"features_uid" gorm:"comment:'版本库编号'"`
-}
-
-type ProjectVersionLog struct {
-	UUID        string `json:"uuid" gorm:"comment:'编号'"`
-	StaffUID    string `json:"staff_uid" gorm:"comment:'员工uid'"`
-	Content     string `json:"content" gorm:"comment:'操作内容描述'"`
-	Remark      string `json:"remark" gorm:"comment:'日志描述'"`
-	LogType     string `json:"log_type" gorm:"comment:'操作类型'"`
-	TaskUID     string `json:"task_uid" gorm:"comment:'task_uid'"`
-	PROUID      string `json:"项目id" gorm:"comment:'项目id'"`
-	FeaturesUid string `json:"features_uid" gorm:"comment:'版本库编号'"`
-}
-
-type ProjectLog struct {
-	UUID       string `json:"uuid" gorm:"comment:'编号'"`
-	PROUID     string `json:"项目id" gorm:"comment:'项目id'"`
-	TaskUID    string `json:"task_uid" gorm:"comment:'任务uid'"`
-	StaffUID   string `json:"staff_uid" gorm:"comment:'员工id'"`
-	Content    string `json:"content" gorm:"comment:'操作内容'"`
-	Remark     string `json:"remark" gorm:"comment:'备注'"`
-	LogType    string `json:"log_type" gorm:"comment:'日志类型'"`
-	ActionType string `json:"action_type" gorm:"comment:'场景类型'"`
-	ToStaffUID string `json:"to_staff_uid" gorm:"comment:'员工uid'"`
-	IsComment  int    `json:"is_comment" gorm:"comment:'是否是评论'"`
-}
+2. 项目更新记录表 project_features
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	记录编号
+project_uid	TEXT	INDEX	所属项目编号
+name	TEXT		名称
+description	TEXT		描述
+created_at	DATETIME	NOT NULL	创建时间
+updated_at	DATETIME	NOT NULL	更新时间
+3. 项目版本表 project_versions
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	版本编号
+project_uid	TEXT	INDEX	所属项目编号
+name	TEXT		版本名称
+description	TEXT		版本描述
+start_time	DATETIME	NULL	开始时间
+publish_time	DATETIME	NULL	实际发布时间
+plan_publish_time	DATETIME	NULL	计划发布时间
+schedule	INTEGER		进度百分比（0-100）
+status	INTEGER		状态：0未开始，2延期，3已发布
+features_uid	TEXT	INDEX	关联的版本库编号
+created_at	DATETIME	NOT NULL	创建时间
+updated_at	DATETIME	NOT NULL	更新时间
+4. 项目版本日志表 project_version_logs
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	日志编号
+staff_uid	TEXT	INDEX	操作员工 UID
+content	TEXT		操作内容描述
+remark	TEXT		日志备注
+log_type	TEXT		操作类型
+task_uid	TEXT	INDEX	关联任务 UID
+project_uid	TEXT	INDEX	关联项目编号
+features_uid	TEXT	INDEX	关联版本库编号
+created_at	DATETIME	NOT NULL	创建时间
+5. 项目日志表 project_logs
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	日志编号
+project_uid	TEXT	INDEX	关联项目编号
+task_uid	TEXT	INDEX	关联任务 UID
+staff_uid	TEXT	INDEX	操作员工 UID
+content	TEXT		操作内容
+remark	TEXT		备注
+log_type	TEXT		日志类型
+action_type	TEXT		场景类型
+to_staff_uid	TEXT	INDEX	目标员工 UID
+is_comment	INTEGER	DEFAULT 0	是否为评论（0/1）
+created_at	DATETIME	NOT NULL	创建时间
+6. 设计文件表 design_files
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	文件编号
+project_uid	TEXT	INDEX	所属项目编号
+organ_uid	TEXT	INDEX	所属组织编号
+flow_uid	TEXT	INDEX	关联流程编号
+type_uid	TEXT	INDEX	文件类型编号
+name	TEXT		文件名称
+description	TEXT		文件描述
+create_by	TEXT	INDEX	创建人
+cover	TEXT		封面图地址
+created_at	DATETIME	NOT NULL	创建时间
+updated_at	DATETIME	NOT NULL	更新时间
+7. 设计文件类型表 design_types
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	类型编号
+type_name	TEXT		类型名称
+icon	TEXT		类型图标
+extra	TEXT		文件后缀名
+created_at	DATETIME	NOT NULL	创建时间
+updated_at	DATETIME	NOT NULL	更新时间
+8. 设计文件版本表 design_versions
+字段名	类型	约束	说明
+uuid	TEXT	PRIMARY KEY	版本编号
+cover	TEXT		封面图地址
+design_uid	TEXT	INDEX	关联的设计文件编号
+child_uid	TEXT	INDEX	关联的节点编号
+soft_ver	TEXT		软件版本号
+name	TEXT		版本名称
+logs	TEXT		版本描述
+fuid	TEXT	INDEX	关联的文件存储编号
+create_by	TEXT	INDEX	创建人
+created_at	DATETIME	NOT NULL	创建时间
+updated_at	DATETIME	NOT NULL	更新时间

@@ -1,7 +1,7 @@
 // create_project.ts
 import { create_project_tpl } from "../view/create.ts";
 import { insertProject } from "../apis/projects.ts";
-import { project_init } from "./project.ts"; // 新增导入
+import { generateUUID } from "../utils/uuid.ts";
 
 export const create_project = () => {
   const popup_node = document.getElementById("popup");
@@ -38,13 +38,14 @@ const submit_project = (node: HTMLElement) => {
         return;
       }
 
+      const uuid = generateUUID();
+
       try {
-        const result = await insertProject({ name });
+        const result = await insertProject({ uuid, name });
         if (result && result.code === 200) {
-          // 创建成功：清空弹窗
           node.innerHTML = "";
-          // 刷新项目列表（重新获取并渲染）
-          await project_init();
+          // 刷新当前页面（URL 保持不变）
+          globalThis.location.reload();
         } else {
           errorTip.textContent = "创建失败: " + (result?.msg || "未知错误");
           errorTip.classList.add("error");

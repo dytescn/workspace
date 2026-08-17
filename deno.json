@@ -9,7 +9,9 @@
     "imports": {
         "@funxdata/pages": "jsr:@funxdata/pages@^0.0.24",
         "@funxdata/pages/tpl": "jsr:@funxdata/pages@^0.0.24/tpl",
-        "@funxdata/toolkit": "jsr:@funxdata/funxdata@^0.1.36"
+        "@funxdata/pages/routetype": "jsr:@funxdata/pages@^0.0.24/router",
+        "@funxdata/toolkit": "jsr:@funxdata/funxdata@^0.1.36",
+        "tailwindcss": "npm:tailwindcss@^4.3.1"
     },
     "compilerOptions": {
       "lib": ["dom", "dom.iterable", "esnext","deno.ns"]

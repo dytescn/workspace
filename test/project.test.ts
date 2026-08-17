@@ -1,4 +1,3 @@
-// test/project.test.ts
 import {
   insertProject,
   getProjects,
@@ -6,7 +5,7 @@ import {
   updateProject,
   softDeleteProject,
   deleteProject,
-} from "../src/apis/projects.ts";   // 修正路径
+} from "../src/apis/projects.ts";
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -21,9 +20,11 @@ async function testProjectAPI() {
     name: "测试项目",
     description: "这是一个测试项目，用于验证 API",
     sort: 1,
-    private: 0,
-    archive: 2,
-    is_recycle: 2,
+    schedule: "进行中",
+    is_private: false,
+    is_archived: false,
+    is_recycled: false,
+    auto_update_schedule: true,
   };
   const insertResult = await insertProject(newData);
   console.log("  创建结果:", insertResult);
