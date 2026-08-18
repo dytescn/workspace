@@ -4,6 +4,7 @@ import { getProjectByUuid, updateProject, softDeleteProject } from "../apis/proj
 import { dialog_delete_tpl, dialog_input_tpl } from "../view/dialog.ts";
 import type { Tpl } from "@funxdata/pages/tplstype";
 
+// deno-lint-ignore no-explicit-any
 const TplToHtml = (globalThis as any)["TplToHtml"] as Tpl;
 
 export const setting_init = async (puid: string) => {
@@ -94,7 +95,7 @@ function bindSettingEvents(project: any) {
       message: "确定要归档该项目吗？",
       onConfirm: async () => {
         await updateProject(project.id, { is_archived: true });
-        window.location.href = "/project";
+        globalThis.location.href = "/project";
       },
     });
   });
@@ -105,7 +106,7 @@ function bindSettingEvents(project: any) {
       message: "确定要删除该项目吗？删除后项目文件将永久删除，所有成员将无法访问项目文件。",
       onConfirm: async () => {
         await softDeleteProject(project.id);
-        window.location.href = "/project";
+        globalThis.location.href = "/project";
       },
     });
   });

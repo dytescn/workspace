@@ -56,7 +56,7 @@ export const create_project = () => {
         if (result && result.code === 200) {
           popup.innerHTML = ""; // 关闭弹窗
           // 刷新页面以显示新项目（或者触发自定义事件刷新列表）
-          globalThis.location.reload();
+          globalThis.location.href = "/project";
         } else {
           errorTip.textContent = "创建失败: " + (result?.msg || "未知错误");
           errorTip.classList.add("error");

@@ -45,7 +45,7 @@ await fetch(API_URL, {
         path: ROUTER_DB,
         sql: `
             INSERT INTO routers (id, title, icon, hide, path, url, show, parent_id, level)
-            VALUES (101, 'project', '', 0, '/project/list', '/workspace/project.js', 1, 100, 2)
+            VALUES (101, 'project', '', 0, '/project', '/workspace/project.js', 1, 100, 2)
         `,
     }),
 });
