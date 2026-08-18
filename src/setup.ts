@@ -3,7 +3,21 @@ const ROUTER_DB = "./router";     // 路由数据库路径
 const PROJECT_DB = "./project";   // 项目业务数据库路径
 const design_DB = "./design";     // 设计文件业务数据库路径
 
-// ==================== 插入工作区相关路由 ====================
+// ---------- 清理旧路由 ----------
+await fetch(API_URL, {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/libary",
+        "FFI-Symbol": "db_insert",
+    },
+    body: JSON.stringify({
+        path: ROUTER_DB,
+        sql: "DELETE FROM routers WHERE id IN (100, 200) OR parent_id IN (100, 200)",
+    }),
+});
+console.log("旧工作区路由清理完成");
+
+// ---------- 插入项目父路由（固定 ID 100） ----------
 await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -13,12 +27,14 @@ await fetch(API_URL, {
     body: JSON.stringify({
         path: ROUTER_DB,
         sql: `
-            INSERT INTO routers (title, icon, hide, path, parent_id, level)
-            VALUES ('项目', 'ic-project', 0, '/project', 0, 1)
+            INSERT INTO routers (id, title, icon, hide, path, parent_id, level)
+            VALUES (100, '项目', 'ic-project', 0, '/project', 0, 1)
         `,
     }),
 });
+console.log("项目父路由插入成功");
 
+// ---------- 插入项目子路由（parent_id = 100） ----------
 await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -28,14 +44,14 @@ await fetch(API_URL, {
     body: JSON.stringify({
         path: ROUTER_DB,
         sql: `
-            INSERT INTO routers (title, icon, hide, path, url, show, parent_id, level)
-            VALUES ('project', '', 0, '/project/list', '/workspace/project.js', 1, 1, 2)
+            INSERT INTO routers (id, title, icon, hide, path, url, show, parent_id, level)
+            VALUES (101, 'project', '', 0, '/project/list', '/workspace/project.js', 1, 100, 2)
         `,
     }),
 });
-console.log("项目路由插入成功");
+console.log("项目子路由插入成功");
 
-
+// ---------- 插入工作区父路由（固定 ID 200） ----------
 await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -45,12 +61,14 @@ await fetch(API_URL, {
     body: JSON.stringify({
         path: ROUTER_DB,
         sql: `
-            INSERT INTO routers (title, icon, hide, path, parent_id, level)
-            VALUES ('工作区', 'ic-project', 1, '/workspace', 0, 1)
+            INSERT INTO routers (id, title, icon, hide, path, parent_id, level)
+            VALUES (200, '工作区', 'ic-project', 1, '/workspace', 0, 1)
         `,
     }),
 });
+console.log("工作区父路由插入成功");
 
+// ---------- 插入工作区文件子路由（parent_id = 200） ----------
 await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -60,12 +78,13 @@ await fetch(API_URL, {
     body: JSON.stringify({
         path: ROUTER_DB,
         sql: `
-            INSERT INTO routers (title, icon, hide, path, url, show, parent_id, level)
-            VALUES ('工作区', '', 1, '/workspace/design', '/workspace/workspace.js', 1, 1, 2)
+            INSERT INTO routers (id, title, icon, hide, path, url, show, parent_id, level)
+            VALUES (201, '工作区文件', '', 1, '/workspace', '/workspace/workspace.js', 1, 200, 2)
         `,
     }),
 });
 
+// ---------- 插入工作区设置子路由（parent_id = 200） ----------
 await fetch(API_URL, {
     method: "POST",
     headers: {
@@ -75,12 +94,12 @@ await fetch(API_URL, {
     body: JSON.stringify({
         path: ROUTER_DB,
         sql: `
-            INSERT INTO routers (title, icon, hide, path, url, show, parent_id, level)
-            VALUES ('工作区', '', 1, '/workspace/setting', '/workspace/workspace.js', 1, 1, 2)
+            INSERT INTO routers (id, title, icon, hide, path, url, show, parent_id, level)
+            VALUES (202, '工作区设置', '', 1, '/workspace/setting', '/workspace/setting.js', 1, 200, 2)
         `,
     }),
 });
-console.log("工作区路由插入成功");
+console.log("工作区子路由插入成功");
 
 // ==================== 创建项目相关数据库表 ====================
 await fetch(API_URL, {

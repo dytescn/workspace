@@ -1,9 +1,9 @@
-export const workspace_setting_tpl =`
+export const workspace_setting_tpl = `
 <ul class="pages-personal">
 	<li class="pages-personal-li row" id="setup_name">
 		<div class="flex-auto">
 			<p class="text font-size-14 color-gray-900">项目名称</p>
-			<p class="span mt-4 font-size-12 color-gray-500" id="name_text">更新网站</p>
+			<p class="span mt-4 font-size-12 color-gray-500" id="name_text"><%= it.projectinfo.name %></p>
 		</div>
 		<button class="vg-btn btn-size-md" id="setup_name_edit">编辑名称</button>
 	</li>
@@ -19,7 +19,7 @@ export const workspace_setting_tpl =`
 	<li class="pages-personal-li row" id="setup_description">
 		<div class="flex-auto">
 			<p class="text font-size-14 color-gray-900">项目简介</p>
-			<p class="span mt-4 font-size-12 color-gray-500" id="description_text">暂无填写项目简介</p>
+			<p class="span mt-4 font-size-12 color-gray-500" id="description_text"><%= it.projectinfo.description || '暂无填写项目简介' %></p>
 		</div>
 		<button class="vg-btn btn-size-md" id="description_edit">编辑信息</button>
 	</li>
@@ -37,6 +37,5 @@ export const workspace_setting_tpl =`
 		</div>
 		<button class="vg-btn btn-size-md btn-type-error" id="del_btn">删除项目</button>
 	</li>
-
 </ul>
-`
+`;

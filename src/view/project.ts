@@ -1,6 +1,6 @@
 export const project_card_tpl = `
   <% it.projects.forEach(function(rowitem){ %>
-        <a class="vg-cards cards-content-img" href="/workspace?uuid=<%= rowitem.uuid || 'aa' %>">
+        <a class="vg-cards cards-content-img" href="/workspace?puid=<%= rowitem.uuid || 'aa' %>">
         <div class="cards-images-container">
             <div class="cards-img-images" style="background-image: url('<%= rowitem.cover || '/assets/imgs/default-cover.png' %>');"></div>
         </div>

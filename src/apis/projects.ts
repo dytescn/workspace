@@ -126,3 +126,30 @@ export const getProjectsByOrgan = async (organUid: string) => {
 export const getProjectsByCreator = async (createBy: string) => {
   return await getProjects(`create_by = '${createBy}'`);
 };
+
+// 按 uuid 查询单个项目（未删除）
+export const getProjectByUuid = async (uuid: string) => {
+  const rows = await dbQuery(`SELECT * FROM projects WHERE uuid = '${uuid}' AND deleted_at IS NULL`);
+  return rows?.[0] || null;
+};
+
+// 在原有 getProjects 基础上，增加分页与计数
+export const getProjectsPage = async (
+  page: number,
+  pageSize: number,
+  where: string = '',
+  order: string = 'id DESC'
+) => {
+  const offset = (page - 1) * pageSize;
+  let sql = `SELECT * FROM projects WHERE deleted_at IS NULL`;
+  if (where) sql += ` AND ${where}`;
+  sql += ` ORDER BY ${order} LIMIT ${pageSize} OFFSET ${offset}`;
+  return await dbQuery(sql);
+};
+
+export const getProjectsCount = async (where: string = '') => {
+  let sql = `SELECT COUNT(*) as total FROM projects WHERE deleted_at IS NULL`;
+  if (where) sql += ` AND ${where}`;
+  const rows = await dbQuery(sql);
+  return rows?.[0]?.total || 0;
+};

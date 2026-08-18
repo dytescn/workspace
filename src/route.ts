@@ -12,7 +12,7 @@ const GlobalPagesRoute =(globalThis as any)["GlobalPagesRouter"] as PagesRouterI
     "child":[
         {
             "path":"/project",
-            "url":"/src/app.ts",
+            "url":"/src/project.ts",
             "show":true,
             "title":"instro"
         }
@@ -27,6 +27,12 @@ const GlobalPagesRoute =(globalThis as any)["GlobalPagesRouter"] as PagesRouterI
         {
             "path":"/workspace",
             "url":"/src/workspace.ts",
+            "show":true,
+            "title":"instro"
+        },
+        {
+            "path":"/workspace/setting",
+            "url":"/src/setting.ts",
             "show":true,
             "title":"instro"
         }
