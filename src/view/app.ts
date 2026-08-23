@@ -66,19 +66,12 @@ export const workspace_tpl = `
                         <ul class="vg-breadcrumbs" fxtag="file_bar"></ul>
                      </div>
                      <div class="right-buttonsall">
-                        <button class="vg-btn btn-icons btn-size-xl" fxtag="file_add">
+                        <button id="design_file_add" class="vg-btn btn-icons btn-size-xl">
                            <i class="vg-icon ic-plus"></i>
                         </button>
-                        <!-- 更多菜单 -->
-                        <div class="vg-dropdowns hide">
-                           <ul class="vg-dropdowns-content">
-                                 <li class="vg-dropdowns-li">新建文件夹</li>
-                                 <li class="vg-dropdowns-li">上传文件</li>
-                           </ul>
-                        </div>
                      </div>
                </div>
-               <div id="design-files" class="project-files-contents overflow-y set-scrollbar" ></div>
+               <div id="design-files" class="pages-project-body overflow-y set-scrollbar" ></div>
             </div>
          </div>
 		</div>

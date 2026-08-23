@@ -1,6 +1,7 @@
 // src/route/workspace.ts
 import { workspace_tpl } from "../view/app.ts";
 import { getProjectByUuid } from "../apis/projects.ts";
+import { workspace_list } from "./workspace_list.ts";
 import type { Tpl } from "@funxdata/pages/tplstype";
 
 const TplToHtml = (globalThis as any)["TplToHtml"] as Tpl;
@@ -33,4 +34,6 @@ export const workspace_init = async (puid: string, active: string = "list") => {
     console.error("获取项目失败:", error);
     workspace_node.innerHTML = `<div class="error">加载项目失败，请稍后重试</div>`;
   }
+  await workspace_list(puid);
+  
 };
