@@ -12,74 +12,6 @@ import type { Tpl } from "@funxdata/pages/tplstype";
 
 const TplToHtml = (globalThis as any)["TplToHtml"] as Tpl;
 
-// ---------- 确认对话框（无输入） ----------
-function showConfirm(message: string, title: string = "提示"): Promise<boolean> {
-  return new Promise((resolve) => {
-    const container = document.getElementById("popup");
-    if (!container) {
-      console.error("未找到 #popup，无法显示对话框");
-      resolve(false);
-      return;
-    }
-    container.innerHTML = TplToHtml.renderString(dialog_alert_tpl, { name: title, message });
-    const confirmBtn = container.querySelector("#define") as HTMLElement;
-    const cancelBtn = container.querySelector("#cancel") as HTMLElement;
-    const cleanup = () => {
-      confirmBtn?.removeEventListener("click", onConfirm);
-      cancelBtn?.removeEventListener("click", onCancel);
-    };
-    const onConfirm = () => { cleanup(); resolve(true); };
-    const onCancel = () => { cleanup(); resolve(false); };
-    confirmBtn?.addEventListener("click", onConfirm);
-    cancelBtn?.addEventListener("click", onCancel);
-  });
-}
-
-// ---------- 输入对话框（带输入框） ----------
-function showInputDialog(
-  message: string,
-  title: string = "输入",
-  defaultValue: string = ""
-): Promise<string | null> {
-  return new Promise((resolve) => {
-    const container = document.getElementById("popup");
-    if (!container) {
-      console.error("未找到 #popup，无法显示输入对话框");
-      resolve(null);
-      return;
-    }
-    container.innerHTML = TplToHtml.renderString(dialog_input_tpl, {
-      info: {
-        title,
-        placeholder: message,
-      },
-    });
-    const input = container.querySelector("#dialog-input input") as HTMLInputElement;
-    if (input && defaultValue) {
-      input.value = defaultValue;
-    }
-    const confirmBtn = container.querySelector("#define") as HTMLElement;
-    const cancelBtn = container.querySelector("#cancel") as HTMLElement;
-
-    const cleanup = () => {
-      confirmBtn?.removeEventListener("click", onConfirm);
-      cancelBtn?.removeEventListener("click", onCancel);
-    };
-    const onConfirm = () => {
-      cleanup();
-      const val = input ? input.value.trim() : "";
-      resolve(val || null);
-    };
-    const onCancel = () => {
-      cleanup();
-      resolve(null);
-    };
-
-    confirmBtn?.addEventListener("click", onConfirm);
-    cancelBtn?.addEventListener("click", onCancel);
-  });
-}
-
 // ---------- 渲染设计文件列表 ----------
 async function renderDesignFiles(container: HTMLElement, projectUid: string) {
   try {
@@ -132,14 +64,13 @@ const designfile_add = async (projectUid: string) => {
 
   try {
     const info = await getCurrentDesignInfo();
+    console.log("获取到的文件信息:", info);
 
-    // 1. 文件未保存（空路径）
+    // 文件未保存（空路径）
     if (!info.filePath) {
+      console.log("文件未保存，弹出输入框");
       const fileName = await showInputDialog("请输入文件名（不含扩展名）", "保存文件", "未命名");
       if (fileName) {
-        // 清空弹框（关闭对话框）
-        const popup = document.getElementById("popup");
-        if (popup) popup.innerHTML = "";
         const fullFileName = fileName.endsWith(".cdr") ? fileName : `${fileName}.cdr`;
         await saveCurrentDesignToWorkspace({ projectUid, fileName: fullFileName });
         await renderDesignFiles(document.getElementById("design-files")!, projectUid);
@@ -147,26 +78,97 @@ const designfile_add = async (projectUid: string) => {
       return;
     }
 
-    // 2. 文件已存在且命名规范
+    // 文件已存在且命名规范（有 puid 和 uuid）
     if (info.puid && info.uuid) {
       console.log(`文件已存在：${info.filePath}，puid=${info.puid}，uuid=${info.uuid}`);
-      await do_save_file({ filePath: info.filePath });
-      // 可考虑提示保存成功
+      // 直接保存并生成版本
+      await saveCurrentDesignToWorkspace({
+        projectUid,
+        puid: info.puid,
+        uuid: info.uuid,
+      });
+      // 刷新列表更新封面
+      await renderDesignFiles(document.getElementById("design-files")!, projectUid);
       return;
     }
 
-    // 3. 文件名不规范
+    // 文件名不规范（缺少 puid 或 uuid）
+    console.log("文件名不规范，弹出输入框");
     const userFileName = await showInputDialog("请输入文件名（不含扩展名）", "保存文件", "");
     if (userFileName) {
-      // 清空弹框
-      const popup = document.getElementById("popup");
-      if (popup) popup.innerHTML = "";
       const fullFileName = userFileName.endsWith(".cdr") ? userFileName : `${userFileName}.cdr`;
       await saveCurrentDesignToWorkspace({ projectUid, fileName: fullFileName });
       await renderDesignFiles(document.getElementById("design-files")!, projectUid);
     }
-  } catch (error) {
+  // deno-lint-ignore no-explicit-any
+  } catch (error:any) {
     console.error("获取设计文件信息失败:", error);
-    await showConfirm("请先打开设计软件(CorelDRAW)并确保服务已启动。", "软件未打开");
+    await showConfirm(`保存失败: ${error.message}`, "错误");
   }
 };
+
+// ---------- 增强的 showInputDialog（备用方案） ----------
+function showInputDialog(
+  message: string,
+  title: string = "输入",
+  defaultValue: string = ""
+): Promise<string | null> {
+  return new Promise((resolve) => {
+    const container = document.getElementById("popup");
+    if (!container) {
+      console.warn("未找到 #popup，使用原生 prompt");
+      const result = prompt(`${title}: ${message}`, defaultValue);
+      resolve(result !== null ? result.trim() || null : null);
+      return;
+    }
+    container.innerHTML = TplToHtml.renderString(dialog_input_tpl, {
+      info: { title, placeholder: message },
+    });
+    const input = container.querySelector("#dialog-input input") as HTMLInputElement;
+    if (input && defaultValue) input.value = defaultValue;
+    const confirmBtn = container.querySelector("#define") as HTMLElement;
+    const cancelBtn = container.querySelector("#cancel") as HTMLElement;
+
+    const cleanup = () => {
+      confirmBtn?.removeEventListener("click", onConfirm);
+      cancelBtn?.removeEventListener("click", onCancel);
+    };
+    const onConfirm = () => {
+      cleanup();
+      const val = input ? input.value.trim() : "";
+      resolve(val || null);
+    };
+    const onCancel = () => {
+      cleanup();
+      resolve(null);
+    };
+    confirmBtn?.addEventListener("click", onConfirm);
+    cancelBtn?.addEventListener("click", onCancel);
+  });
+}
+
+// 同样增强 showConfirm
+function showConfirm(message: string, title: string = "提示"): Promise<boolean> {
+  return new Promise((resolve) => {
+    const container = document.getElementById("popup");
+    if (!container) {
+      console.warn("未找到 #popup,使用原生 confirm");
+      resolve(confirm(`${title}: ${message}`));
+      return;
+    }
+    container.innerHTML = TplToHtml.renderString(dialog_alert_tpl, { name: title, message });
+    const confirmBtn = container.querySelector("#define") as HTMLElement;
+    const cancelBtn = container.querySelector("#cancel") as HTMLElement;
+    const cleanup = () => {
+      confirmBtn?.removeEventListener("click", onConfirm);
+      cancelBtn?.removeEventListener("click", onCancel);
+    };
+    const onConfirm = () => { cleanup(); resolve(true); };
+    const onCancel = () => { cleanup(); resolve(false); };
+    confirmBtn?.addEventListener("click", onConfirm);
+    cancelBtn?.addEventListener("click", onCancel);
+  });
+}
+
+
+

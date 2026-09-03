@@ -1,6 +1,7 @@
 // src/apis/save_file.ts
 
-import { insertDesignFile } from "./designFiles.ts";
+import { insertDesignFile, updateDesignFile, getDesignFileByUuid } from "./designFiles.ts";
+import { insertDesignVersion } from "./designVersions.ts";
 import { generateUUID } from "../utils/uuid.ts";
 import { getCurrentDir } from "../utils/sysinfo.ts";
 
@@ -21,13 +22,26 @@ async function callFFI<T = any>(
   return res.json();
 }
 
-// ---------- 工作区管理 ----------
+// ---------- 目录管理 ----------
 export async function ensureWorkspace(): Promise<string> {
   const createRes = await callFFI<{ path: string }>("create_dir", { dir_name: "workspace" });
   if (createRes.code !== 200) {
     throw new Error(`创建/获取 workspace 目录失败: ${createRes.msg}`);
   }
-  return createRes.data.path;
+  const path = createRes.data.path.replace(/\//g, '\\');
+  console.log("ensureWorkspace 返回路径:", path);
+  return path;
+}
+
+async function ensureVersionsDir(): Promise<string> {
+  const currentDir = await getCurrentDir();
+  const versionsDir = `${currentDir}\\workspace\\versions`;
+  console.log("准备创建版本目录:", versionsDir);
+  const createRes = await callFFI<{ path: string }>("create_dir", { dir_name: versionsDir });
+  if (createRes.code !== 200) {
+    throw new Error(`创建版本目录失败: ${createRes.msg}`);
+  }
+  return versionsDir;
 }
 
 // ---------- 获取当前设计信息 ----------
@@ -68,6 +82,12 @@ export async function getCurrentDesignInfo(ver: string = "26"): Promise<DesignIn
     filePath = json.data;
   }
 
+  // ✅ 过滤版本文件
+  if (filePath && (filePath.includes('workspace\\versions') || filePath.includes('workspace/versions'))) {
+    console.log("检测到版本文件，视为新文件");
+    return { filePath: "", puid: null, uuid: null };
+  }
+
   if (filePath === "") {
     return { filePath: "", puid: null, uuid: null };
   }
@@ -101,26 +121,32 @@ export async function getCurrentDesignInfo(ver: string = "26"): Promise<DesignIn
 
 // ---------- 导出文件与封面 ----------
 export async function exportDesignFile(targetPath: string, ver: string = "26"): Promise<any> {
+  const fixedPath = targetPath.replace(/\//g, '\\');
+  console.log("exportDesignFile 路径:", fixedPath);
   const result = await callFFI(
     "export_file",
-    { file_src: targetPath, ver },
+    { file_src: fixedPath, ver },
     "http://127.0.0.1:44944/cdrimex"
   );
+  console.log("exportDesignFile 结果:", result);
   if (result.code !== 200) throw new Error(`保存文件失败: ${result.msg}`);
   return result;
 }
 
 export async function exportCover(coverPath: string, ver: string = "26"): Promise<any> {
+  const fixedPath = coverPath.replace(/\//g, '\\');
+  console.log("exportCover 路径:", fixedPath);
   const result = await callFFI(
     "export_cover",
-    { cover_src: coverPath, ver },
+    { cover_src: fixedPath, ver },
     "http://127.0.0.1:44944/cdrimex"
   );
+  console.log("exportCover 结果:", result);
   if (result.code !== 200) throw new Error(`导出封面失败: ${result.msg}`);
   return result;
 }
 
-// ---------- 通用保存（覆盖已有文件） ----------
+// ---------- 通用保存（覆盖已有文件，不处理版本） ----------
 export async function do_save_file(options: { filePath: string; puid?: string | null; uuid?: string | null }): Promise<any> {
   return await exportDesignFile(options.filePath);
 }
@@ -137,10 +163,18 @@ interface SaveToWorkspaceOptions {
 export async function saveCurrentDesignToWorkspace(options: SaveToWorkspaceOptions): Promise<any> {
   const { projectUid, ver = "26" } = options;
 
-  const workspaceDir = await ensureWorkspace();
-  const currentDir = await getCurrentDir();
-  const assetsDir = `${currentDir}/web/assets`;
+  console.log("saveCurrentDesignToWorkspace 开始，选项:", options);
 
+  // 1. 确保目录存在
+  const workspaceDir = await ensureWorkspace();
+  const versionsDir = await ensureVersionsDir();
+  const currentDir = await getCurrentDir();
+  const assetsDir = `${currentDir}\\web\\assets`;
+  console.log("工作目录:", workspaceDir);
+  console.log("版本目录:", versionsDir);
+  console.log("assets 目录:", assetsDir);
+
+  // 2. 获取或生成 puid / uuid
   let puid = options.puid;
   let uuid = options.uuid;
   if (!puid || !uuid) {
@@ -158,27 +192,64 @@ export async function saveCurrentDesignToWorkspace(options: SaveToWorkspaceOptio
       uuid = uuid || generateUUID();
     }
   }
+  console.log("最终 puid:", puid, "uuid:", uuid);
 
+  // 3. 主文件名和路径
   const fileName = options.fileName || `${puid}_${uuid}.cdr`;
-  const targetPath = `${workspaceDir}/${fileName}`;
+  const targetPath = `${workspaceDir}\\${fileName}`;
+  console.log("主文件保存路径:", targetPath);
+
+  // 4. 导出设计文件
   await exportDesignFile(targetPath, ver);
 
-  // 生成封面编号，并加上 .png 扩展名存储到数据库
+  // 5. 导出封面
   const coverId = generateUUID().replace(/-/g, "").slice(0, 16);
-  const coverFileName = `${coverId}.png`; // 完整文件名
-  const coverFullPath = `${assetsDir}/${coverFileName}`;
+  const coverFileName = `${coverId}.png`;
+  const coverFullPath = `${assetsDir}\\${coverFileName}`;
+  console.log("封面保存路径:", coverFullPath);
   await exportCover(coverFullPath, ver);
 
-  const insertData = {
-    uuid,
-    project_uid: projectUid,
-    name: fileName,
-    cover: coverFileName, // 存储完整文件名（含扩展名）
-    organ_uid: "",
-    flow_uid: "",
-    type_uid: "",
+  // 6. 检查设计是否已存在
+  const existingDesign = await getDesignFileByUuid(uuid);
+  if (existingDesign) {
+    console.log("设计已存在，ID:", existingDesign.id);
+    await updateDesignFile(existingDesign.id, { cover: coverFileName });
+  } else {
+    console.log("插入新设计记录");
+    await insertDesignFile({
+      uuid,
+      project_uid: projectUid,
+      name: fileName,
+      cover: coverFileName,
+      organ_uid: "",
+      flow_uid: "",
+      type_uid: "",
+      create_by: "",
+      description: "",
+    });
+  }
+
+  // 7. 保存版本文件（每次都新增）
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const versionFileName = `${uuid}_${timestamp}.cdr`;
+  const versionPath = `${versionsDir}\\${versionFileName}`;
+  console.log("版本文件保存路径:", versionPath);
+  await exportDesignFile(versionPath, ver);
+
+  // 8. 插入版本记录
+  const versionUuid = generateUUID();
+  await insertDesignVersion({
+    uuid: versionUuid,
+    design_uid: uuid,
+    child_uid: "",
+    soft_ver: ver,
+    name: `v${timestamp}`,
+    logs: "自动保存",
+    fuid: versionPath,
+    cover: coverFileName,
     create_by: "",
-    description: "",
-  };
-  return await insertDesignFile(insertData);
+  });
+
+  console.log("保存完成");
+  return { uuid, puid, fileName, versionPath };
 }

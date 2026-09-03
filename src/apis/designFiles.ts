@@ -78,3 +78,15 @@ export const getDesignFilesByProject = async (projectUid: string) => {
 export const getDesignFilesByType = async (typeUid: string) => {
   return await dbQuery(`SELECT * FROM design_files WHERE type_uid = '${typeUid}' ORDER BY id DESC`);
 };
+
+// src/apis/designFiles.ts（新增）
+
+/**
+ * 按 uuid 查询设计文件
+ * @param uuid 设计文件唯一标识
+ * @returns 设计文件对象或 null
+ */
+export const getDesignFileByUuid = async (uuid: string) => {
+  const rows = await dbQuery(`SELECT * FROM design_files WHERE uuid = '${uuid}'`);
+  return rows?.[0] || null;
+};
